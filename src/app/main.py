@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from src.app.routes.webhook import router as webhook_router
+
 
 app = FastAPI()
 
-@app.get("/")
-def home():
-    return {"message": "PR Review Assistant API is running 🚀"}
+app.include_router(webhook_router, prefix="/webhook")
+
