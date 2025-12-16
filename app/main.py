@@ -5,11 +5,14 @@ from dotenv import load_dotenv
 import os
 import base64
 import requests
+from app.services import github_service
 
 load_dotenv()
 
 
 app = FastAPI()
+
+app.include_router(github_service.router)
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -69,14 +72,14 @@ async def fetch_file_content(contents_url: str):
         "file_content": decoded
     }
 
-@app.get("/fetch_pr_files")
-async def get_pr_files(pr_number: int, owner: str, repo: str):
-    url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/files"
-    headers = {
-        "Authorization" : f"Bearer " + GITHUB_TOKEN,
-        "Accept": "application/vnd.github.v3+json"
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200: 
-        return {"error": f"Failed to fetch files: {response.text}"}
-    return response.json()
+# @app.get("/fetch_pr_files")
+# async def get_pr_files(pr_number: int, owner: str, repo: str):
+#     url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/files"
+#     headers = {
+#         "Authorization" : f"Bearer " + GITHUB_TOKEN,
+#         "Accept": "application/vnd.github.v3+json"
+#     }
+#     response = requests.get(url, headers=headers)
+#     if response.status_code != 200: 
+#         return {"error": f"Failed to fetch files: {response.text}"}
+#     return response.json()
