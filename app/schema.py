@@ -1,9 +1,6 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
-from typing import List, Optional
-from pydantic import BaseModel
-
 
 
 # Model for ONE changed file
@@ -26,8 +23,8 @@ class PRFilesResponse(BaseModel):
 # (used in /fetch_file_content)
 
 class FileContent(BaseModel):
-    file_path: str                   # name/path of the file
-    content: str                     # decoded text content
+    file_path: str                  # name/path of the file
+    content: Optional[str]                     # decoded text content
 
 
 
@@ -35,3 +32,11 @@ class FileContent(BaseModel):
 class PRFullFilesResponse(BaseModel):
     files: List[FileContent]
 
+
+class ExpandedFile(BaseModel):
+    filename: str
+    patch: Optional[str]
+    content: Optional[str]  # None if binary or missing
+
+class AllFilesContentResponse(BaseModel):
+    files: List[ExpandedFile]

@@ -1,8 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from ..schema import FileChange, PRFilesResponse
-import requests
-import os
+import requests, os
 import base64
+from ..utils import fetch_file_content
 
 
 router = APIRouter(prefix="/github", tags=["github"])
@@ -15,8 +15,9 @@ async def fetch_pr_files(owner: str, repo: str, pr_number: int):
     - filename
     - status
     - patch (diff)
-    - contents_url (where to fetch full file content)
+    - contents_url (for fetching full file content)
     """
+
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/files"
 
     headers = {
@@ -27,24 +28,26 @@ async def fetch_pr_files(owner: str, repo: str, pr_number: int):
     response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
-        raise Exception(f"Failed to fetch PR files: {response.text}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"GitHub API error: {response.text}"
+        )
 
     raw_files = response.json()
-
     cleaned_files = []
 
     for f in raw_files:
-        # Skip removed or binary files (no contents_url)
-        contents_url = f.get("contents_url")
-        patch = f.get("patch")
-
         cleaned_files.append(
             FileChange(
-                filename=f["filename"],  # Always present hence no get()
-                status=f["status"],
-                patch=patch,
-                contents_url=contents_url
+                filename=f["filename"],              # always present
+                status=f["status"],                  # always present
+                patch=f.get("patch"),                # optional
+                contents_url=f.get("contents_url")   # optional
             )
         )
 
     return PRFilesResponse(files=cleaned_files)
+
+
+
+
