@@ -41,3 +41,18 @@ class ExpandedFile(BaseModel):
 # -----------------------------
 class AllFilesContentResponse(BaseModel):
     files: List[ExpandedFile]
+
+
+
+class RepoTreeItem(BaseModel):
+    path: str
+    type: str       # "blob" or "tree"
+    sha: str
+    mode: Optional[str] = None
+    size: Optional[int] = None
+    url: Optional[str] = None
+
+
+class RepoTreeResponse(BaseModel):
+    tree: List[RepoTreeItem]
+    truncated: Optional[bool] = None

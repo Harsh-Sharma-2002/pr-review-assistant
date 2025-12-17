@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from ..schema import FileChange, PRFilesResponse, ExpandedFile, AllFilesContentResponse
+from ..schema import FileChange, PRFilesResponse, ExpandedFile, AllFilesContentResponse, RepoTreeResponse, RepoTreeItem
 import requests, os
 import base64
 from ..utils import fetch_file_content
@@ -90,7 +90,7 @@ async def fetch_all_file_contents(owner: str, repo: str, pr_number: int):
 
     return AllFilesContentResponse(files=expanded_files)
 
-@router.get("/fetch_repo_tree")
+@router.get("/fetch_repo_tree",response_model=RepoTreeResponse)
 def fetch_repo_tree(owner: str, repo: str, branch: str = "main"):
 
     """
@@ -133,6 +133,21 @@ def fetch_repo_tree(owner: str, repo: str, branch: str = "main"):
 
     tree_data = tree_response.json()
 
-    return tree_data
+    tree_items = []
+    for item in tree_data.get("tree", []):
+        tree_items.append(
+            RepoTreeItem(
+                path=item["path"],
+                type=item["type"],
+                sha=item["sha"],
+                mode=item.get("mode"),
+                size=item.get("size"),
+                url=item.get("url")
+            )
+        )
 
+
+    return RepoTreeResponse(tree=tree_items, truncated=tree_data.get("truncated"))
+
+# @router.get("/index_repo")
 
