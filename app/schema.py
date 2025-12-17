@@ -2,41 +2,42 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-
-# Model for ONE changed file
-
+# -----------------------------
+# Model for ONE changed file (metadata only)
+# -----------------------------
 class FileChange(BaseModel):
     filename: str
-    status: str                      # modified, added, removed, renamed
-    patch: Optional[str] = None      # diff text (can be None for binary or deleted files)
-    contents_url: Optional[str] = None   # URL to get full content (None for removed files)
+    status: str
+    patch: Optional[str] = None
+    contents_url: Optional[str] = None
 
 
-# Response model for /fetch_pr_files
-
+# -----------------------------
+# Response for /fetch_pr_files
+# -----------------------------
 class PRFilesResponse(BaseModel):
     files: List[FileChange]
 
 
-
-# Model for file content
-# (used in /fetch_file_content)
-
+# -----------------------------
+# Model for a single file's decoded content
+# -----------------------------
 class FileContent(BaseModel):
-    file_path: str                  # name/path of the file
-    content: Optional[str]                     # decoded text content
+    filename: str
+    content: Optional[str]  # may be None for binary files
 
 
-
-# Response model for /fetch_all_contents (future step)
-class PRFullFilesResponse(BaseModel):
-    files: List[FileContent]
-
-
+# -----------------------------
+# Model for a file with diff + content
+# Used in /fetch_all_file_contents
+# -----------------------------
 class ExpandedFile(BaseModel):
     filename: str
-    patch: Optional[str]
-    content: Optional[str]  # None if binary or missing
+    patch: Optional[str] = None
+    content: Optional[str] = None
 
+
+# Response for /fetch_all_file_contents
+# -----------------------------
 class AllFilesContentResponse(BaseModel):
     files: List[ExpandedFile]
