@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 from ..schema import *
-from ..services.github_services import fetch_pr_files, fetch_all_file_contents
+from ..services.pr_services import fetch_pr_files, fetch_all_file_contents
 
 
-router = APIRouter(tags=["github"])
+router = APIRouter(tags=["pr services"])
 
 
 ##############################################################################################

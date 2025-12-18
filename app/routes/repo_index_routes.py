@@ -4,7 +4,7 @@ from ..services.repo_index_services import index_repo, fetch_repo_tree
 
 
 
-router = APIRouter(tags=["repo_index"])
+router = APIRouter(tags=["repo_index services"])
 
 @router.get("/fetch_repo_tree",response_model=RepoTreeResponse)
 def fetch_repo_tree_route(owner: str, repo: str, branch: str = "main"):

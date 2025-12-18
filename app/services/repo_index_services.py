@@ -2,6 +2,10 @@ from fastapi import HTTPException
 from ..schema import *
 import requests, os
 from ..utils import fetch_file_content
+import tempfile
+import subprocess
+import shutil
+import os
 
 
 
@@ -64,6 +68,9 @@ def fetch_repo_tree(owner: str, repo: str, branch: str = "main"):
     return RepoTreeResponse(tree=tree_items, truncated=tree_data.get("truncated"))
 
 
+#################################################################################################################
+#################################################################################################################
+
 
 def index_repo(owner: str, repo: str, branch: str = "main"):
     """
@@ -108,4 +115,38 @@ def index_repo(owner: str, repo: str, branch: str = "main"):
     return RepoIndexResponse(items=index_items)
 
 
+
+#################################################################################################################
+#################################################################################################################
+
+def index_repo_clone(owner: str, repo: str, branch: str = "main"):
+    """
+    Indexes the repository by cloning it and reading files directly.
+    Returns a list of RepoIndexItem with path and content.
+
+    Note: Requires 'git' to be installed and accessible in the environment.
+    """
+    import tempfile
+    import subprocess
+    import shutil
+
+    # Create a temporary directory to clone the repo
+    temp_dir = tempfile.mkdtemp()
+    repo_url = f"https://github.com/{owner}/{repo}.git"
+    try:
+        # Clone the repository
+        subprocess.run(
+            ["git", "clone", "--branch", branch, "--single-branch", repo_url, temp_dir],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+    except subprocess.CalledProcessError as e:
+        shutil.rmtree(temp_dir)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Git clone failed: {e.stderr}"
+        )
 
