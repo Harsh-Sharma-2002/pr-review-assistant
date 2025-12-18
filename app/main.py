@@ -1,18 +1,18 @@
 from fastapi import FastAPI
-# from app.routes.webhook import router as webhook_router
 import requests
 from dotenv import load_dotenv
 import os
-import base64
 import requests
-from app.services import github_service
+from app.routes import github_routes, repo_index_routes
 
 load_dotenv()
 
 
 app = FastAPI()
 
-app.include_router(github_service.router)
+
+app.include_router(github_routes.router, prefix="/github")
+app.include_router(repo_index_routes.router, prefix="/repo_index")
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -47,30 +47,7 @@ async def test_files():
 
 
 
-@app.get("/fetch_file_content")
-async def fetch_file_content(contents_url: str):
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    
-    response = requests.get(contents_url, headers=headers)
-    
-    if response.status_code != 200:
-        return {"error": f"Failed: {response.text}"}
-    
-    data = response.json()  # THIS MUST BE A DICT
-    
-    encoded = data.get("content")
-    if not encoded:
-        return {"error": "No 'content' key — you passed wrong URL"}
-    
-    decoded = base64.b64decode(encoded).decode("utf-8", errors="replace")
-    
-    return {
-        "file_path": data.get("path"),
-        "file_content": decoded
-    }
+
 
 # @app.get("/fetch_pr_files")
 # async def get_pr_files(pr_number: int, owner: str, repo: str):
