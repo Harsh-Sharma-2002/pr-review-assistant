@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from sentence_transformers import SentenceTransformer
+from typing import Optional
 
 # Load local model once
 _local_model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -74,7 +75,7 @@ def embed_claude(text: str, api_key: str):
 
 ########################################################################################################
 # MAIN EMBEDDING LOGIC
-def embed_text(text: str, provider: str | None = None):
+def embed_text(text: str, provider: Optional[str] = None):
     """
     Returns:
     {

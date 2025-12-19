@@ -3,7 +3,7 @@ import requests
 from dotenv import load_dotenv
 import os
 import requests
-from app.routes import pr_routes, repo_index_routes,chunk_routes
+from app.routes import pr_routes, repo_index_routes, chunk_routes, embedding_routes
 
 load_dotenv()
 
@@ -14,6 +14,7 @@ app = FastAPI()
 app.include_router(pr_routes.router, prefix="/pr")
 app.include_router(repo_index_routes.router, prefix="/repo_index")
 app.include_router(chunk_routes.router, prefix="/chunk")
+app.include_router(embedding_routes.router,prefix="/embed")
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
