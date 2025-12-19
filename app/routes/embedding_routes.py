@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from ..services.embedding_services import embed_text
 from ..schema import EmbedRequest,EmbedResponse,BatchEmbedRequest,BatchEmbedResponse
 
-router = APIRouter(tags=["Embedding routes"])
+router = APIRouter(tags=["embedding"])
 
 
 
@@ -21,7 +21,7 @@ def embed_single_route(req: EmbedRequest):
 
 # #############################################################################################################################
 
-@router.post("//batch", response_model=BatchEmbedResponse)
+@router.post("/batch", response_model=BatchEmbedResponse)
 def embed_batch(req: BatchEmbedRequest):
     """
     Embed a list of texts.
