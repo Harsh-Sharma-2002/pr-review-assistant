@@ -65,3 +65,15 @@ class RepoIndexItem(BaseModel):
 # Response for /index_repo
 class RepoIndexResponse(BaseModel):
     items: List[RepoIndexItem]
+
+
+
+# Model for repo chunks
+class RepoChunk(BaseModel):
+    file_path: str
+    chunk_id: int
+    content: str
+
+# Response for repo chunks
+class RepoChunksResponse(BaseModel):
+    chunks: List[RepoChunk]
