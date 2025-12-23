@@ -75,90 +75,162 @@ def embed_claude(text: str, api_key: str):
 
 ########################################################################################################
 # MAIN EMBEDDING LOGIC
-def embed_text(text: str, provider: Optional[str] = None):
+
+def embed_text(text: str, provider: str):
     """
+    Generate embeddings using an explicitly specified provider.
+
+    This function MUST be called with a provider argument.
+    Auto-selection is intentionally disallowed to guarantee
+    embedding consistency within a repository.
+
     Returns:
     {
         "embedding": [...],
         "provider": "openai" | "gemini" | "claude-fallback" | "local"
     }
-
-    Provider selection:
-        EXPLICIT MODE:
-            - If provider requested, use that or return clear error
-        AUTO MODE:
-            - Try OpenAI → Gemini → Claude → Local
     """
+
+    if not provider:
+        raise ValueError("Embedding provider must be explicitly specified.")
+
+    provider = provider.lower()
 
     openai_key = os.getenv("OPENAI_API_KEY")
     gemini_key = os.getenv("GEMINI_API_KEY")
     claude_key = os.getenv("ANTHROPIC_API_KEY")
 
- 
-    # EXPLICIT PROVIDER MODE
-    
-    if provider:
-        provider = provider.lower()
-
-        try:
-            if provider == "openai":
-                if not openai_key:
-                    return {"error": "Missing OPENAI_API_KEY"}
-                return embed_openai(text, openai_key)
-
-            if provider == "gemini":
-                if not gemini_key:
-                    return {"error": "Missing GEMINI_API_KEY"}
-                return embed_gemini(text, gemini_key)
-
-            if provider == "claude":
-                if not claude_key:
-                    return {"error": "Missing ANTHROPIC_API_KEY"}
-                return embed_claude(text, claude_key)
-
-            if provider == "local":
-                return embed_local(text)
-
-            return {"error": f"Unknown provider '{provider}'."}
-
-        except Exception as e:
-            return {
-                "error": f"Provider '{provider}' failed.",
-                "details": str(e)
-            }
-
-   
-    # AUTO-SELECTION MODE WITH ERROR LOGGING
-  
-    errors = []
-
-    if openai_key:
-        try:
-            return embed_openai(text, openai_key)
-        except Exception as e:
-            errors.append({"provider": "openai", "error": str(e)})
-
-    if gemini_key:
-        try:
-            return embed_gemini(text, gemini_key)
-        except Exception as e:
-            errors.append({"provider": "gemini", "error": str(e)})
-
-    if claude_key:
-        try:
-            return embed_claude(text, claude_key)
-        except Exception as e:
-            errors.append({"provider": "claude-fallback", "error": str(e)})
-
-    # Local never fails unless machine is broken
     try:
-        return embed_local(text)
+        if provider == "openai":
+            if not openai_key:
+                raise ValueError("Missing OPENAI_API_KEY")
+            return embed_openai(text, openai_key)
+
+        if provider == "gemini":
+            if not gemini_key:
+                raise ValueError("Missing GEMINI_API_KEY")
+            return embed_gemini(text, gemini_key)
+
+        if provider == "claude":
+            # Claude has no embedding endpoint → fallback is explicit
+            return embed_claude(text, claude_key)
+
+        if provider == "local":
+            return embed_local(text)
+
+        raise ValueError(f"Unknown embedding provider '{provider}'")
+
     except Exception as e:
-        errors.append({"provider": "local", "error": str(e)})
+        # Fail loudly — do NOT silently fall back
+        raise RuntimeError(
+            f"Embedding failed using provider '{provider}': {str(e)}"
+        )
+"""
+========================================
+Embedding Services — Design Notes
+========================================
 
-    # If absolutely everything failed:
-    return {
-        "error": "All embedding providers failed.",
-        "attempts": errors
-    }
+PURPOSE
+-------
+This module is responsible for generating vector embeddings from raw text
+(code chunks or queries). These embeddings are used exclusively for semantic
+similarity search in the vector database.
 
+Embeddings are NOT:
+- reversible
+- shown to the LLM
+- used for reasoning or generation
+
+The LLM always receives the original text, never vectors.
+
+----------------------------------------
+KEY DESIGN DECISIONS
+----------------------------------------
+
+1. EXPLICIT PROVIDER REQUIREMENT
+--------------------------------
+All embedding calls require an explicit `provider` argument
+(e.g. "local", "openai", "gemini").
+
+Rationale:
+- Vector similarity is only meaningful when all vectors in a collection
+  are generated using the same embedding model.
+- Auto-selection or fallback can silently mix embeddings from different
+  providers, which breaks retrieval quality and is extremely hard to debug.
+
+Invariant:
+- A single repository must use exactly ONE embedding provider.
+- Provider selection is a repo-level decision, not a per-call decision.
+
+----------------------------------------
+
+2. NO AUTO-SELECTION IN PRODUCTION PATHS
+----------------------------------------
+Automatic fallback (OpenAI → Gemini → Local) was intentionally removed from
+production embedding paths.
+
+Rationale:
+- Auto-selection hides failures and introduces nondeterministic behavior.
+- Silent fallback can cause indexing and querying to use different models.
+
+Behavior:
+- All embedding failures fail fast and raise exceptions.
+- Misuse is surfaced immediately instead of degrading silently.
+
+----------------------------------------
+
+3. SEPARATION OF CONCERNS
+-------------------------
+This module is intentionally pure and stateless.
+
+It does NOT:
+- know about repositories
+- know about vector databases
+- know about LLMs
+- store configuration or state
+
+It ONLY:
+- takes (text, provider)
+- returns raw model embeddings
+
+This keeps the system modular, testable, and easy to evolve.
+
+----------------------------------------
+
+4. LOCAL FALLBACK STRATEGY
+--------------------------
+A local SentenceTransformer model (`all-MiniLM-L6-v2`) is used as a fallback
+provider when no external API key is available.
+
+Rationale:
+- Allows the system to work out-of-the-box.
+- Enables fast local development and testing.
+- Provides deterministic, offline embeddings.
+
+----------------------------------------
+
+5. NORMALIZATION POLICY
+-----------------------
+Embeddings are NOT normalized in this module.
+
+Normalization is applied:
+- at the vector database boundary
+- immediately before storing vectors
+- immediately before querying vectors
+
+Rationale:
+- Normalization is a vector-DB concern, not a model concern.
+- Prevents accidental double-normalization.
+- Allows different similarity metrics or DBs to be used later.
+
+----------------------------------------
+
+SUMMARY
+-------
+This embedding layer was deliberately hardened early to enforce strong
+invariants around provider consistency and debuggability. These constraints
+prevent subtle retrieval bugs later and align the system with production
+RAG architectures.
+
+========================================
+"""

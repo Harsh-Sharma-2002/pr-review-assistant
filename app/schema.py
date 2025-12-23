@@ -88,11 +88,11 @@ class RepoChunksResponse(BaseModel):
 
 class EmbedRequest(BaseModel):
     text: str
-    provider: Optional[str] = None
+    provider: str
 
 class BatchEmbedRequest(BaseModel):
-    texts:List[str]
-    provider: Optional[str] = None
+    texts: List[str]
+    provider: str 
 
 class EmbedResponse(BaseModel):
     embedding: List[float]
