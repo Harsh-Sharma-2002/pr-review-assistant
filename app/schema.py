@@ -75,6 +75,7 @@ class RepoChunk(BaseModel):
     file_path: str
     chunk_id: int
     content: str
+    local_index: int
 
 # Response for repo chunks
 class RepoChunksResponse(BaseModel):

@@ -101,11 +101,18 @@ def chunk_text(text: str):
 
 def chunk_repo_contents(repo_index: RepoIndexResponse) -> RepoChunksResponse:
     """
-    Chunks repository contents into structurally coherent, LLM-safe code segments.
+    Chunks repository code into LLM-safe, indexed segments.
 
-    Only source code files are indexed. Non-code artifacts are excluded to
-    preserve retrieval precision and avoid polluting the vector index with
-    low-signal data.
+    Files are first split independently into ordered, semantically coherent
+    chunks by `chunk_text`, which assigns a file-local index to each chunk.
+    This function then assigns a globally unique ID and associates each chunk
+    with its source file path.
+
+    Chunk sizes are fixed to ensure predictable downstream behavior under LLM
+    context limits. Static overlap is avoided; locality is preserved via
+    file-local indices, enabling safe window expansion at retrieval time.
+    Only source code files are indexed to maintain retrieval precision.
+
     """
 
     repo_chunks = []
@@ -143,16 +150,14 @@ def chunk_repo_contents(repo_index: RepoIndexResponse) -> RepoChunksResponse:
             repo_chunks.append(
                 RepoChunk(
                     file_path=file_path,
-                    chunk_id=global_chunk_id,
+                    chunk_id=global_chunk_id,   #
+                    local_index=local_id,       
                     content=chunk_content
                 )
             )
             global_chunk_id += 1
 
     return RepoChunksResponse(chunks=repo_chunks)
-
-
-
 
 ##################################################################################################################
 ##################################################################################################################
